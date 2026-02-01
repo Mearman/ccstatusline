@@ -28,25 +28,23 @@ function getAllTimestampsFromContent(content: string): Date[] {
 
     for (const line of lines) {
         try {
-            const json = JSON.parse(line) as {
-                timestamp?: string;
-                isSidechain?: boolean;
-                message?: { usage?: { input_tokens?: number; output_tokens?: number } };
-            };
+            const json: unknown = JSON.parse(line);
+            if (typeof json !== 'object' || json === null)
+                continue;
 
-            const usage = json.message?.usage;
+            const usage = 'message' in json && typeof json.message === 'object' && json.message !== null && 'usage' in json.message && typeof json.message.usage === 'object' && json.message.usage !== null ? json.message.usage : null;
             if (!usage)
                 continue;
 
-            const hasInputTokens = typeof usage.input_tokens === 'number';
-            const hasOutputTokens = typeof usage.output_tokens === 'number';
+            const hasInputTokens = 'input_tokens' in usage && typeof usage.input_tokens === 'number';
+            const hasOutputTokens = 'output_tokens' in usage && typeof usage.output_tokens === 'number';
             if (!hasInputTokens || !hasOutputTokens)
                 continue;
 
-            if (json.isSidechain === true)
+            if ('isSidechain' in json && json.isSidechain === true)
                 continue;
 
-            const timestamp = json.timestamp;
+            const timestamp = 'timestamp' in json ? json.timestamp : undefined;
             if (typeof timestamp !== 'string')
                 continue;
 

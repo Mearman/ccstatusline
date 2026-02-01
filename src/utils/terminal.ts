@@ -21,8 +21,14 @@ export function getPackageVersion(): string {
     for (const packageJsonPath of possiblePaths) {
         try {
             if (fs.existsSync(packageJsonPath)) {
-                const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
-                return packageJson.version ?? '';
+                const packageJson: unknown = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+                if (typeof packageJson === 'object' && packageJson !== null && 'version' in packageJson) {
+                    const { version } = packageJson;
+                    if (typeof version === 'string') {
+                        return version;
+                    }
+                }
+                return '';
             }
         } catch {
             // Continue to next path

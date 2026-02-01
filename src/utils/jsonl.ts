@@ -11,6 +11,10 @@ import type {
 
 import { getClaudeConfigDir } from './claude-settings';
 
+function isTranscriptLine(value: unknown): value is TranscriptLine {
+    return typeof value === 'object' && value !== null;
+}
+
 // Ensure fs.promises compatibility for older Node versions
 const readFile = promisify(fs.readFile);
 const readFileSync = fs.readFileSync;
@@ -35,8 +39,8 @@ export async function getSessionDuration(transcriptPath: string): Promise<string
         // Find first valid timestamp
         for (const line of lines) {
             try {
-                const data = JSON.parse(line) as { timestamp?: string };
-                if (data.timestamp) {
+                const data: unknown = JSON.parse(line);
+                if (typeof data === 'object' && data !== null && 'timestamp' in data && typeof data.timestamp === 'string') {
                     firstTimestamp = new Date(data.timestamp);
                     break;
                 }
@@ -48,8 +52,8 @@ export async function getSessionDuration(transcriptPath: string): Promise<string
         // Find last valid timestamp (iterate backwards)
         for (let i = lines.length - 1; i >= 0; i--) {
             try {
-                const data = JSON.parse(lines[i] ?? '') as { timestamp?: string };
-                if (data.timestamp) {
+                const data: unknown = JSON.parse(lines[i] ?? '');
+                if (typeof data === 'object' && data !== null && 'timestamp' in data && typeof data.timestamp === 'string') {
                     lastTimestamp = new Date(data.timestamp);
                     break;
                 }
@@ -108,7 +112,10 @@ export async function getTokenMetrics(transcriptPath: string): Promise<TokenMetr
 
         for (const line of lines) {
             try {
-                const data = JSON.parse(line) as TranscriptLine;
+                const parsed: unknown = JSON.parse(line);
+                if (!isTranscriptLine(parsed))
+                    continue;
+                const data = parsed;
                 if (data.message?.usage) {
                     inputTokens += data.message.usage.input_tokens || 0;
                     outputTokens += data.message.usage.output_tokens || 0;
@@ -322,11 +329,9 @@ function getAllTimestampsFromFile(filePath: string): Date[] {
 
         for (const line of lines) {
             try {
-                const json = JSON.parse(line) as {
-                    timestamp?: string;
-                    isSidechain?: boolean;
-                    message?: { usage?: { input_tokens?: number; output_tokens?: number } };
-                };
+                const json: unknown = JSON.parse(line);
+                if (!isTranscriptLine(json))
+                    continue;
 
                 // Only treat entries with real token usage as block activity
                 const usage = json.message?.usage;

@@ -1,4 +1,5 @@
 import type { WidgetItem } from '../types/Widget';
+import { WidgetItemSchema } from '../types/Widget';
 
 import { generateGuid } from './guid';
 
@@ -46,11 +47,14 @@ export const migrations: Migration[] = [
                         const typedLine: WidgetItem[] = [];
                         for (const item of processedLine) {
                             if (isRecord(item) && typeof item.type === 'string') {
-                                typedLine.push({
+                                const parsed = WidgetItemSchema.safeParse({
                                     ...item,
                                     id: generateGuid(),
                                     type: item.type
-                                } as WidgetItem);
+                                });
+                                if (parsed.success) {
+                                    typedLine.push(parsed.data);
+                                }
                             }
                         }
                         processedLines.push(typedLine);

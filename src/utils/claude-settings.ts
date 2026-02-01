@@ -8,6 +8,10 @@ import type { ClaudeSettings } from '../types/ClaudeSettings';
 // Re-export for backward compatibility
 export type { ClaudeSettings };
 
+function isClaudeSettings(value: unknown): value is ClaudeSettings {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 // Use fs.promises directly
 const readFile = fs.promises.readFile;
 const writeFile = fs.promises.writeFile;
@@ -65,7 +69,11 @@ export async function loadClaudeSettings(): Promise<ClaudeSettings> {
             return {};
         }
         const content = await readFile(settingsPath, 'utf-8');
-        return JSON.parse(content) as ClaudeSettings;
+        const parsed: unknown = JSON.parse(content);
+        if (isClaudeSettings(parsed)) {
+            return parsed;
+        }
+        return {};
     } catch {
         return {};
     }
