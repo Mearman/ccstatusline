@@ -85,6 +85,7 @@ export default ts.config([
             '@typescript-eslint/no-unused-vars': ['error', { 'args': 'none' }],
             '@typescript-eslint/no-empty-function': ['error', { 'allow': ['private-constructors'] }],
             '@typescript-eslint/array-type': 'error',
+            '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
             '@typescript-eslint/consistent-type-imports': 'error',
             '@typescript-eslint/no-inferrable-types': ['error', { 'ignoreProperties': true }],
             '@typescript-eslint/restrict-template-expressions': 'off',
