@@ -14,6 +14,14 @@ import {
 
 type DisplayMode = 'text' | 'progress' | 'progress-short' | 'bar-only' | 'bar-label';
 
+function isDisplayMode(value: string | undefined): value is DisplayMode {
+    return value === 'text' || value === 'progress' || value === 'progress-short' || value === 'bar-only' || value === 'bar-label';
+}
+
+function toDisplayMode(value: string | undefined, fallback: DisplayMode): DisplayMode {
+    return isDisplayMode(value) ? value : fallback;
+}
+
 interface ContextConfig {
     maxTokens: number;
     usableTokens: number;
@@ -30,7 +38,7 @@ export abstract class BaseContextPercentageWidget implements Widget {
 
     getEditorDisplay(item: WidgetItem): WidgetEditorDisplay {
         const isInverse = item.metadata?.inverse === 'true';
-        const mode = (item.metadata?.display ?? 'text') as DisplayMode;
+        const mode = toDisplayMode(item.metadata?.display, 'text');
         const modifiers: string[] = [];
 
         if (isInverse) {
@@ -64,7 +72,7 @@ export abstract class BaseContextPercentageWidget implements Widget {
             };
         }
         if (action === 'toggle-progress') {
-            const currentMode = (item.metadata?.display ?? 'text') as DisplayMode;
+            const currentMode = toDisplayMode(item.metadata?.display, 'text');
             let nextMode: DisplayMode;
             if (currentMode === 'text') {
                 nextMode = 'progress';
@@ -90,7 +98,7 @@ export abstract class BaseContextPercentageWidget implements Widget {
 
     render(item: WidgetItem, context: RenderContext, settings: Settings): string | null {
         const isInverse = item.metadata?.inverse === 'true';
-        const displayMode = (item.metadata?.display ?? 'text') as DisplayMode;
+        const displayMode = toDisplayMode(item.metadata?.display, 'text');
 
         if (context.isPreview) {
             const previewValue = isInverse ? (100 - this.previewPercentage) : this.previewPercentage;

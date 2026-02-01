@@ -80,21 +80,19 @@ export class CustomCommandWidget implements Widget {
             } catch (error) {
                 // Provide more specific error messages
                 if (error instanceof Error) {
-                    const execError = error as Error & {
-                        code?: string;
-                        signal?: string;
-                        status?: number;
-                    };
-                    if (execError.code === 'ENOENT') {
+                    const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+                    const signal = 'signal' in error && typeof error.signal === 'string' ? error.signal : undefined;
+                    const status = 'status' in error && typeof error.status === 'number' ? error.status : undefined;
+                    if (code === 'ENOENT') {
                         return '[Cmd not found]';
-                    } else if (execError.code === 'ETIMEDOUT') {
+                    } else if (code === 'ETIMEDOUT') {
                         return '[Timeout]';
-                    } else if (execError.code === 'EACCES') {
+                    } else if (code === 'EACCES') {
                         return '[Permission denied]';
-                    } else if (execError.signal) {
-                        return `[Signal: ${execError.signal}]`;
-                    } else if (execError.status !== undefined) {
-                        return `[Exit: ${execError.status}]`;
+                    } else if (signal) {
+                        return `[Signal: ${signal}]`;
+                    } else if (status !== undefined) {
+                        return `[Exit: ${status}]`;
                     }
                 }
                 return '[Error]';

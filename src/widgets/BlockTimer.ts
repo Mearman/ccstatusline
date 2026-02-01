@@ -13,6 +13,14 @@ import {
 
 type DisplayMode = 'time' | 'progress' | 'progress-short' | 'bar-only' | 'bar-label';
 
+function isBlockTimerDisplayMode(value: string | undefined): value is DisplayMode {
+    return value === 'time' || value === 'progress' || value === 'progress-short' || value === 'bar-only' || value === 'bar-label';
+}
+
+function toBlockTimerDisplayMode(value: string | undefined, fallback: DisplayMode): DisplayMode {
+    return isBlockTimerDisplayMode(value) ? value : fallback;
+}
+
 export class BlockTimerWidget implements Widget {
     getDefaultColor(): string { return 'yellow'; }
     getDescription(): string { return 'Shows elapsed time since beginning of current 5hr block'; }
@@ -40,7 +48,7 @@ export class BlockTimerWidget implements Widget {
 
     handleEditorAction(action: string, item: WidgetItem): WidgetItem | null {
         if (action === 'toggle-progress') {
-            const currentMode = (item.metadata?.display ?? 'time') as DisplayMode;
+            const currentMode = toBlockTimerDisplayMode(item.metadata?.display, 'time');
             let nextMode: DisplayMode;
 
             if (currentMode === 'time') {
@@ -67,7 +75,7 @@ export class BlockTimerWidget implements Widget {
     }
 
     render(item: WidgetItem, context: RenderContext, settings: Settings): string | null {
-        const displayMode = (item.metadata?.display ?? 'time') as DisplayMode;
+        const displayMode = toBlockTimerDisplayMode(item.metadata?.display, 'time');
 
         if (context.isPreview) {
             const prefix = item.rawValue ? '' : 'Block ';
