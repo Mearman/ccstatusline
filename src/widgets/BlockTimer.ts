@@ -6,9 +6,12 @@ import type {
     WidgetEditorDisplay,
     WidgetItem
 } from '../types/Widget';
-import { renderProgressBar } from '../utils/progress-bar';
+import {
+    renderProgressBar,
+    renderProgressBarWithLabel
+} from '../utils/progress-bar';
 
-type DisplayMode = 'time' | 'progress' | 'progress-short';
+type DisplayMode = 'time' | 'progress' | 'progress-short' | 'bar-only' | 'bar-label';
 
 export class BlockTimerWidget implements Widget {
     getDefaultColor(): string { return 'yellow'; }
@@ -23,6 +26,10 @@ export class BlockTimerWidget implements Widget {
             modifiers.push('progress bar');
         } else if (mode === 'progress-short') {
             modifiers.push('short bar');
+        } else if (mode === 'bar-only') {
+            modifiers.push('bar only');
+        } else if (mode === 'bar-label') {
+            modifiers.push('bar with label');
         }
 
         return {
@@ -40,6 +47,10 @@ export class BlockTimerWidget implements Widget {
                 nextMode = 'progress';
             } else if (currentMode === 'progress') {
                 nextMode = 'progress-short';
+            } else if (currentMode === 'progress-short') {
+                nextMode = 'bar-only';
+            } else if (currentMode === 'bar-only') {
+                nextMode = 'bar-label';
             } else {
                 nextMode = 'time';
             }
@@ -60,7 +71,11 @@ export class BlockTimerWidget implements Widget {
 
         if (context.isPreview) {
             const prefix = item.rawValue ? '' : 'Block ';
-            if (displayMode === 'progress') {
+            if (displayMode === 'bar-only') {
+                return `[${renderProgressBar(73.9, 16)}]`;
+            } else if (displayMode === 'bar-label') {
+                return `[${renderProgressBarWithLabel(73.9, 16)}]`;
+            } else if (displayMode === 'progress') {
                 return `${prefix}[${renderProgressBar(73.9, 32)}] 73.9%`;
             } else if (displayMode === 'progress-short') {
                 return `${prefix}[${renderProgressBar(73.9, 16)}] 73.9%`;
@@ -72,7 +87,11 @@ export class BlockTimerWidget implements Widget {
         const blockMetrics = context.blockMetrics;
         if (!blockMetrics) {
             // No active session - show empty progress bar or 0hr 0m
-            if (displayMode === 'progress' || displayMode === 'progress-short') {
+            if (displayMode === 'bar-only') {
+                return `[${renderProgressBar(0, 16)}]`;
+            } else if (displayMode === 'bar-label') {
+                return `[${renderProgressBarWithLabel(0, 16)}]`;
+            } else if (displayMode === 'progress' || displayMode === 'progress-short') {
                 const barWidth = displayMode === 'progress' ? 32 : 16;
                 return item.rawValue ? `[${renderProgressBar(0, barWidth)}] 0%` : `Block [${renderProgressBar(0, barWidth)}] 0%`;
             } else {
@@ -88,7 +107,11 @@ export class BlockTimerWidget implements Widget {
             const progress = Math.min(elapsedMs / sessionDurationMs, 1.0);
             const percentage = (progress * 100).toFixed(1);
 
-            if (displayMode === 'progress' || displayMode === 'progress-short') {
+            if (displayMode === 'bar-only') {
+                return `[${renderProgressBar(progress * 100, 16)}]`;
+            } else if (displayMode === 'bar-label') {
+                return `[${renderProgressBarWithLabel(progress * 100, 16)}]`;
+            } else if (displayMode === 'progress' || displayMode === 'progress-short') {
                 const barWidth = displayMode === 'progress' ? 32 : 16;
                 const progressBar = renderProgressBar(progress * 100, barWidth);
 
