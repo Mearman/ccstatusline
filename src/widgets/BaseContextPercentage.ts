@@ -7,9 +7,12 @@ import type {
     WidgetItem
 } from '../types/Widget';
 import { getContextConfig } from '../utils/model-context';
-import { renderProgressBar } from '../utils/progress-bar';
+import {
+    renderProgressBar,
+    renderProgressBarWithLabel
+} from '../utils/progress-bar';
 
-type DisplayMode = 'text' | 'progress' | 'progress-short';
+type DisplayMode = 'text' | 'progress' | 'progress-short' | 'bar-only' | 'bar-label';
 
 interface ContextConfig {
     maxTokens: number;
@@ -37,6 +40,10 @@ export abstract class BaseContextPercentageWidget implements Widget {
             modifiers.push('progress bar');
         } else if (mode === 'progress-short') {
             modifiers.push('short bar');
+        } else if (mode === 'bar-only') {
+            modifiers.push('bar only');
+        } else if (mode === 'bar-label') {
+            modifiers.push('bar with label');
         }
 
         return {
@@ -63,6 +70,10 @@ export abstract class BaseContextPercentageWidget implements Widget {
                 nextMode = 'progress';
             } else if (currentMode === 'progress') {
                 nextMode = 'progress-short';
+            } else if (currentMode === 'progress-short') {
+                nextMode = 'bar-only';
+            } else if (currentMode === 'bar-only') {
+                nextMode = 'bar-label';
             } else {
                 nextMode = 'text';
             }
@@ -96,10 +107,17 @@ export abstract class BaseContextPercentageWidget implements Widget {
     }
 
     private formatOutput(item: WidgetItem, displayMode: DisplayMode, percentage: number, isInverse: boolean): string {
+        const fillPercentage = isInverse ? (100 - percentage) : percentage;
+
+        if (displayMode === 'bar-only') {
+            return `[${renderProgressBar(fillPercentage, 16)}]`;
+        }
+        if (displayMode === 'bar-label') {
+            return `[${renderProgressBarWithLabel(fillPercentage, 16)}]`;
+        }
         if (displayMode === 'progress' || displayMode === 'progress-short') {
             const prefix = item.rawValue ? '' : `${this.label} `;
             const barWidth = displayMode === 'progress' ? 32 : 16;
-            const fillPercentage = isInverse ? (100 - percentage) : percentage;
             const progressBar = renderProgressBar(fillPercentage, barWidth);
             return `${prefix}[${progressBar}] ${percentage.toFixed(1)}%`;
         }
