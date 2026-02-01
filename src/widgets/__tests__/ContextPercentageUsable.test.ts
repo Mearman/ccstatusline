@@ -114,6 +114,47 @@ describe('ContextPercentageUsableWidget', () => {
         });
     });
 
+    describe('compact bar display modes', () => {
+        function renderWithMode(modelId: string | undefined, contextLength: number, display: string, rawValue = false, inverse = false) {
+            const widget = new ContextPercentageUsableWidget();
+            const context: RenderContext = {
+                data: modelId ? { model: { id: modelId } } : undefined,
+                tokenMetrics: {
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    cachedTokens: 0,
+                    totalTokens: 0,
+                    contextLength
+                }
+            };
+            const item: WidgetItem = {
+                id: 'context-percentage-usable',
+                type: 'context-percentage-usable',
+                rawValue,
+                metadata: { display, ...(inverse ? { inverse: 'true' } : {}) }
+            };
+            return widget.render(item, context, DEFAULT_SETTINGS);
+        }
+
+        it('should render bar-only mode with no label or percentage', () => {
+            // 42000/160000 = 26.25%, floor(0.2625 * 16) = 4 filled, 12 empty
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-only');
+            expect(result).toBe('[████░░░░░░░░░░░░]');
+        });
+
+        it('should render bar-label mode with percentage centred in larger segment', () => {
+            // 26.25% used, filled=4, empty=12, empty is larger
+            // label "26.3%" (5 chars), centred in empty segment at pos 4: 4 + floor((12-5)/2) = 4+3 = 7
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-label');
+            expect(result).toBe('[████░░░26.3%░░░░]');
+        });
+
+        it('should render bar-only ignoring rawValue', () => {
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-only', true);
+            expect(result).toBe('[████░░░░░░░░░░░░]');
+        });
+    });
+
     describe('preview with progress mode', () => {
         it('should render progress bar preview', () => {
             const widget = new ContextPercentageUsableWidget();

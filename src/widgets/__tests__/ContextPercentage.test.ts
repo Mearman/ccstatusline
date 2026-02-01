@@ -115,6 +115,53 @@ describe('ContextPercentageWidget', () => {
         });
     });
 
+    describe('compact bar display modes', () => {
+        function renderWithMode(modelId: string | undefined, contextLength: number, display: string, rawValue = false, inverse = false) {
+            const widget = new ContextPercentageWidget();
+            const context: RenderContext = {
+                data: modelId ? { model: { id: modelId } } : undefined,
+                tokenMetrics: {
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    cachedTokens: 0,
+                    totalTokens: 0,
+                    contextLength
+                }
+            };
+            const item: WidgetItem = {
+                id: 'context-percentage',
+                type: 'context-percentage',
+                rawValue,
+                metadata: { display, ...(inverse ? { inverse: 'true' } : {}) }
+            };
+            return widget.render(item, context, DEFAULT_SETTINGS);
+        }
+
+        it('should render bar-only mode with no label or percentage', () => {
+            // 42000/200000 = 21.0%, floor(0.21 * 16) = 3 filled, 13 empty
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-only');
+            expect(result).toBe('[███░░░░░░░░░░░░░]');
+        });
+
+        it('should render bar-label mode with percentage centred in larger segment', () => {
+            // 21.0% used, empty segment (13) > filled (3), label "21.0%" centred in empty
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-label');
+            expect(result).toBe('[███░░░░21.0%░░░░]');
+        });
+
+        it('should render bar-only ignoring rawValue', () => {
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-only', true);
+            expect(result).toBe('[███░░░░░░░░░░░░░]');
+        });
+
+        it('should render bar-label for inverse mode', () => {
+            // inverse: fill is still 21.0% (used), label shows in filled segment if it were larger
+            // but 21% fill = 3, empty = 13, so label still in empty segment
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'bar-label', false, true);
+            expect(result).toBe('[███░░░░21.0%░░░░]');
+        });
+    });
+
     describe('preview with progress mode', () => {
         it('should render progress bar preview', () => {
             const widget = new ContextPercentageWidget();
