@@ -18,6 +18,7 @@ export const WidgetItemSchema = z.object({
     preserveColors: z.boolean().optional(),
     timeout: z.number().optional(),
     merge: z.union([z.boolean(), z.literal('no-padding')]).optional(),
+    span: z.number().min(1).optional(),
     metadata: z.record(z.string(), z.string()).optional()
 });
 
