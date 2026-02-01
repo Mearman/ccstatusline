@@ -39,16 +39,15 @@ function renderPowerlineStatusLine(
     preRenderedWidgets: PreRenderedWidget[],  // Pre-rendered widgets for this line
     preCalculatedMaxWidths: number[]  // Pre-calculated max widths for alignment
 ): string {
-    const powerlineConfig = settings.powerline as Record<string, unknown> | undefined;
-    const config = powerlineConfig ?? {};
+    const powerlineConfig = settings.powerline;
 
     // Get separator configuration
-    const separators = (config.separators as string[] | undefined) ?? ['\uE0B0'];
-    const invertBgs = (config.separatorInvertBackground as boolean[] | undefined) ?? separators.map(() => false);
+    const separators = powerlineConfig.separators;
+    const invertBgs = powerlineConfig.separatorInvertBackground;
 
     // Get caps arrays or fallback to empty arrays
-    const startCaps = (config.startCaps as string[] | undefined) ?? [];
-    const endCaps = (config.endCaps as string[] | undefined) ?? [];
+    const startCaps = powerlineConfig.startCaps;
+    const endCaps = powerlineConfig.endCaps;
 
     // Get the cap for this line (cycle through if more lines than caps)
     const capLineIndex = context.lineIndex ?? lineIndex;
@@ -56,20 +55,20 @@ function renderPowerlineStatusLine(
     const endCap = endCaps.length > 0 ? endCaps[capLineIndex % endCaps.length] : '';
 
     // Get theme colors if a theme is set and not 'custom'
-    const themeName = config.theme as string | undefined;
+    const themeName = powerlineConfig.theme;
     let themeColors: { fg: string[]; bg: string[] } | undefined;
 
     if (themeName && themeName !== 'custom') {
         const theme = getPowerlineTheme(themeName);
         if (theme) {
-            const colorLevel = getColorLevelString((settings.colorLevel as number) as (0 | 1 | 2 | 3));
+            const colorLevel = getColorLevelString(settings.colorLevel);
             const colorLevelKey = colorLevel === 'ansi16' ? '1' : colorLevel === 'ansi256' ? '2' : '3';
             themeColors = theme[colorLevelKey];
         }
     }
 
     // Get color level from settings
-    const colorLevel = getColorLevelString((settings.colorLevel as number) as (0 | 1 | 2 | 3));
+    const colorLevel = getColorLevelString(settings.colorLevel);
 
     // Filter out separator and flex-separator widgets in powerline mode
     const filteredWidgets = widgets.filter(widget => widget.type !== 'separator' && widget.type !== 'flex-separator'
@@ -83,7 +82,7 @@ function renderPowerlineStatusLine(
     // Calculate terminal width based on flex mode settings
     let terminalWidth: number | null = null;
     if (detectedWidth) {
-        const flexMode = settings.flexMode as string;
+        const flexMode = settings.flexMode;
 
         if (context.isPreview) {
             // In preview mode, account for box borders and padding (6 chars total)
@@ -91,7 +90,7 @@ function renderPowerlineStatusLine(
                 terminalWidth = detectedWidth - 6;
             } else if (flexMode === 'full-minus-40') {
                 terminalWidth = detectedWidth - 40;
-            } else if (flexMode === 'full-until-compact') {
+            } else {
                 terminalWidth = detectedWidth - 6;
             }
         } else {
@@ -100,7 +99,7 @@ function renderPowerlineStatusLine(
                 terminalWidth = detectedWidth - 6;
             } else if (flexMode === 'full-minus-40') {
                 terminalWidth = detectedWidth - 40;
-            } else if (flexMode === 'full-until-compact') {
+            } else {
                 const threshold = settings.compactThreshold;
                 const contextPercentage = calculateContextPercentage(context);
 
@@ -213,7 +212,7 @@ function renderPowerlineStatusLine(
         return '';
 
     // Apply auto-alignment if enabled and this line participates
-    const autoAlign = config.autoAlign as boolean | number[] | undefined;
+    const autoAlign = powerlineConfig.autoAlign;
     const currentLineIndex = context.lineIndex ?? lineIndex;
     const shouldAlign = autoAlign === true
         || (Array.isArray(autoAlign) && autoAlign.includes(currentLineIndex));
@@ -684,11 +683,10 @@ export function renderStatusLine(
     // No need to override here
 
     // Get color level from settings
-    const colorLevel = getColorLevelString((settings.colorLevel as number) as (0 | 1 | 2 | 3));
+    const colorLevel = getColorLevelString(settings.colorLevel);
 
     // Check if powerline mode is enabled
-    const powerlineSettings = settings.powerline as Record<string, unknown> | undefined;
-    const isPowerlineMode = Boolean(powerlineSettings?.enabled);
+    const isPowerlineMode = settings.powerline.enabled;
 
     // If powerline mode is enabled, use powerline renderer
     if (isPowerlineMode)
@@ -717,7 +715,7 @@ export function renderStatusLine(
     // Calculate terminal width based on flex mode settings
     let terminalWidth: number | null = null;
     if (detectedWidth) {
-        const flexMode = settings.flexMode as string;
+        const flexMode = settings.flexMode;
 
         if (context.isPreview) {
             // In preview mode, account for box borders and padding (6 chars total)
@@ -725,7 +723,7 @@ export function renderStatusLine(
                 terminalWidth = detectedWidth - 6; // Subtract 6 for box borders and padding in preview
             } else if (flexMode === 'full-minus-40') {
                 terminalWidth = detectedWidth - 40; // -40 for auto-compact + 3 for preview
-            } else if (flexMode === 'full-until-compact') {
+            } else {
                 // For preview, always show full width minus preview padding
                 terminalWidth = detectedWidth - 6;
             }
@@ -737,7 +735,7 @@ export function renderStatusLine(
             } else if (flexMode === 'full-minus-40') {
                 // Always subtract 41 for auto-compact message
                 terminalWidth = detectedWidth - 40;
-            } else if (flexMode === 'full-until-compact') {
+            } else {
                 // Check context percentage to decide
                 const threshold = settings.compactThreshold;
                 const contextPercentage = calculateContextPercentage(context);
