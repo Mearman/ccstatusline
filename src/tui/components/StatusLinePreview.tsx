@@ -10,6 +10,7 @@ import type { Settings } from '../../types/Settings';
 import type { WidgetItem } from '../../types/Widget';
 import {
     calculateMaxWidthsFromPreRendered,
+    getAlignedLineIndices,
     preRenderAllWidgets,
     renderStatusLineWithInfo,
     type PreRenderedWidget,
@@ -56,7 +57,9 @@ export const StatusLinePreview: React.FC<StatusLinePreviewProps> = ({ lines, ter
 
         // Always pre-render all widgets once (for efficiency)
         const preRenderedLines = preRenderAllWidgets(lines, settings, { terminalWidth, isPreview: true });
-        const preCalculatedMaxWidths = calculateMaxWidthsFromPreRendered(preRenderedLines, settings);
+        const autoAlign = settings.powerline.autoAlign;
+        const alignedLines = getAlignedLineIndices(autoAlign, lines.length);
+        const preCalculatedMaxWidths = calculateMaxWidthsFromPreRendered(preRenderedLines, settings, alignedLines);
 
         let globalSeparatorIndex = 0;
         const result: string[] = [];

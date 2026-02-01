@@ -21,6 +21,7 @@ import {
 } from './utils/jsonl';
 import {
     calculateMaxWidthsFromPreRendered,
+    getAlignedLineIndices,
     preRenderAllWidgets,
     renderStatusLine
 } from './utils/renderer';
@@ -101,7 +102,9 @@ async function renderMultipleLines(data: StatusJSON) {
 
     // Always pre-render all widgets once (for efficiency)
     const preRenderedLines = preRenderAllWidgets(lines, settings, context);
-    const preCalculatedMaxWidths = calculateMaxWidthsFromPreRendered(preRenderedLines, settings);
+    const autoAlign = settings.powerline.autoAlign;
+    const alignedLines = getAlignedLineIndices(autoAlign, lines.length);
+    const preCalculatedMaxWidths = calculateMaxWidthsFromPreRendered(preRenderedLines, settings, alignedLines);
 
     // Render each line using pre-rendered content
     let globalSeparatorIndex = 0;
