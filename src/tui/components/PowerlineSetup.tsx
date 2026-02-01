@@ -184,8 +184,31 @@ export const PowerlineSetup: React.FC<PowerlineSetupProps> = ({
                 // Show font installation consent prompt
                 setConfirmingFontInstall(true);
             } else if ((input === 'a' || input === 'A') && powerlineConfig.enabled) {
-                // Toggle autoAlign when powerline is enabled
-                const newConfig = { ...powerlineConfig, autoAlign: !powerlineConfig.autoAlign };
+                // Cycle autoAlign: false → true → per-line mode → false
+                const current = powerlineConfig.autoAlign;
+                let next: boolean | number[];
+                if (current === false) {
+                    next = true;
+                } else if (current === true) {
+                    // Enter per-line mode with all active lines selected
+                    const activeLineIndices = settings.lines
+                        .map((line, i) => (line.length > 0 ? i : -1))
+                        .filter(i => i >= 0);
+                    next = activeLineIndices;
+                } else {
+                    next = false;
+                }
+                const newConfig = { ...powerlineConfig, autoAlign: next };
+                onUpdate({ ...settings, powerline: newConfig });
+            } else if (Array.isArray(powerlineConfig.autoAlign) && powerlineConfig.enabled
+                && (input === '1' || input === '2' || input === '3')) {
+                // Toggle individual line in per-line mode
+                const lineIdx = parseInt(input) - 1;
+                const current = powerlineConfig.autoAlign;
+                const next = current.includes(lineIdx)
+                    ? current.filter(i => i !== lineIdx)
+                    : [...current, lineIdx].sort();
+                const newConfig = { ...powerlineConfig, autoAlign: next };
                 onUpdate({ ...settings, powerline: newConfig });
             }
         }
@@ -396,12 +419,23 @@ export const PowerlineSetup: React.FC<PowerlineSetupProps> = ({
 
                     {powerlineConfig.enabled && (
                         <>
-                            <Box>
-                                <Text>  Align Widgets: </Text>
-                                <Text color={powerlineConfig.autoAlign ? 'green' : 'red'}>
-                                    {powerlineConfig.autoAlign ? '✓ Enabled  ' : '✗ Disabled '}
-                                </Text>
-                                <Text dimColor> - Press (a) to toggle</Text>
+                            <Box flexDirection='column'>
+                                <Box>
+                                    <Text>  Align Widgets: </Text>
+                                    <Text color={powerlineConfig.autoAlign === false ? 'red' : 'green'}>
+                                        {powerlineConfig.autoAlign === true
+                                            ? '✓ All Lines'
+                                            : Array.isArray(powerlineConfig.autoAlign)
+                                                ? `✓ Lines ${powerlineConfig.autoAlign.map(i => i + 1).join(', ')}`
+                                                : '✗ Disabled '}
+                                    </Text>
+                                    <Text dimColor> - Press (a) to cycle</Text>
+                                </Box>
+                                {Array.isArray(powerlineConfig.autoAlign) && (
+                                    <Box>
+                                        <Text dimColor>  Toggle lines: (1) (2) (3)</Text>
+                                    </Box>
+                                )}
                             </Box>
 
                             <Box flexDirection='column' marginTop={1}>
