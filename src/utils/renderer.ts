@@ -212,9 +212,13 @@ function renderPowerlineStatusLine(
     if (widgetElements.length === 0)
         return '';
 
-    // Apply auto-alignment if enabled
-    const autoAlign = config.autoAlign as boolean | undefined;
-    if (autoAlign) {
+    // Apply auto-alignment if enabled and this line participates
+    const autoAlign = config.autoAlign as boolean | number[] | undefined;
+    const currentLineIndex = context.lineIndex ?? lineIndex;
+    const shouldAlign = autoAlign === true
+        || (Array.isArray(autoAlign) && autoAlign.includes(currentLineIndex));
+
+    if (shouldAlign) {
         // Apply padding to current line's widgets based on pre-calculated max widths
         let alignmentPos = 0;
         for (let i = 0; i < widgetElements.length; i++) {
@@ -228,8 +232,15 @@ function renderPowerlineStatusLine(
 
             // Only apply alignment to non-merged widgets (widgets that follow a merge are excluded)
             if (!isPreviousMerged) {
-                const maxWidth = preCalculatedMaxWidths[alignmentPos];
-                if (maxWidth !== undefined) {
+                const widgetSpan = element.widget.span ?? 1;
+
+                // Sum max widths across all spanned positions
+                let targetWidth = 0;
+                for (let s = 0; s < widgetSpan; s++) {
+                    targetWidth += preCalculatedMaxWidths[alignmentPos + s] ?? 0;
+                }
+
+                if (targetWidth > 0) {
                     // Calculate combined width if this widget merges with following ones
                     let combinedLength = stringWidth(element.content.replace(ANSI_REGEX, ''));
                     let j = i;
@@ -241,7 +252,7 @@ function renderPowerlineStatusLine(
                         }
                     }
 
-                    const paddingNeeded = maxWidth - combinedLength;
+                    const paddingNeeded = targetWidth - combinedLength;
                     if (paddingNeeded > 0) {
                         // Add padding to the last widget in the merge group
                         const lastElement = widgetElements[j];
@@ -253,7 +264,7 @@ function renderPowerlineStatusLine(
                     // Skip over merged widgets
                     i = j;
                 }
-                alignmentPos++;
+                alignmentPos += widgetSpan;
             }
         }
     }
@@ -543,16 +554,39 @@ export function preRenderAllWidgets(
     return preRenderedLines;
 }
 
+// Determine which line indices participate in alignment
+export function getAlignedLineIndices(autoAlign: boolean | number[], lineCount: number): Set<number> {
+    if (autoAlign === true) {
+        return new Set(Array.from({ length: lineCount }, (_, i) => i));
+    }
+    if (Array.isArray(autoAlign)) {
+        return new Set(autoAlign.filter(i => i >= 0 && i < lineCount));
+    }
+    return new Set();
+}
+
 // Calculate max widths from pre-rendered widgets for alignment
 export function calculateMaxWidthsFromPreRendered(
     preRenderedLines: PreRenderedWidget[][],
-    settings: Settings
+    settings: Settings,
+    alignedLines?: Set<number>
 ): number[] {
     const maxWidths: number[] = [];
     const defaultPadding = settings.defaultPadding ?? '';
     const paddingLength = defaultPadding.length;
 
-    for (const preRenderedLine of preRenderedLines) {
+    // Track spanning widgets so we can redistribute excess after the main pass
+    const spanEntries: { startPos: number; span: number; totalWidth: number }[] = [];
+
+    for (let lineIdx = 0; lineIdx < preRenderedLines.length; lineIdx++) {
+        // Skip lines not in the alignment set
+        if (alignedLines && !alignedLines.has(lineIdx))
+            continue;
+
+        const preRenderedLine = preRenderedLines[lineIdx];
+        if (!preRenderedLine)
+            continue;
+
         const filteredWidgets = preRenderedLine.filter(
             w => w.widget.type !== 'separator' && w.widget.type !== 'flex-separator' && w.content
         );
@@ -573,8 +607,6 @@ export function calculateMaxWidthsFromPreRendered(
                 j++;
                 const nextWidget = filteredWidgets[j];
                 if (nextWidget) {
-                    // For merged widgets, add width but account for padding adjustments
-                    // When merging with 'no-padding', don't count padding between widgets
                     if (filteredWidgets[j - 1]?.widget.merge === 'no-padding') {
                         totalWidth += nextWidget.plainLength;
                     } else {
@@ -583,16 +615,44 @@ export function calculateMaxWidthsFromPreRendered(
                 }
             }
 
-            const currentMax = maxWidths[alignmentPos];
-            if (currentMax === undefined) {
-                maxWidths[alignmentPos] = totalWidth;
+            const widgetSpan = widget.widget.span ?? 1;
+
+            if (widgetSpan > 1) {
+                // Track for redistribution pass
+                spanEntries.push({ startPos: alignmentPos, span: widgetSpan, totalWidth });
+                // Ensure positions exist
+                for (let s = 0; s < widgetSpan; s++) {
+                    if (maxWidths[alignmentPos + s] === undefined) {
+                        maxWidths[alignmentPos + s] = 0;
+                    }
+                }
             } else {
-                maxWidths[alignmentPos] = Math.max(currentMax, totalWidth);
+                const currentMax = maxWidths[alignmentPos];
+                if (currentMax === undefined) {
+                    maxWidths[alignmentPos] = totalWidth;
+                } else {
+                    maxWidths[alignmentPos] = Math.max(currentMax, totalWidth);
+                }
             }
 
             // Skip over merged widgets since we've already processed them
             i = j;
-            alignmentPos++;
+            alignmentPos += widgetSpan;
+        }
+    }
+
+    // Redistribute spanning widget widths across their positions
+    for (const entry of spanEntries) {
+        let sumOfPositions = 0;
+        for (let s = 0; s < entry.span; s++) {
+            sumOfPositions += maxWidths[entry.startPos + s] ?? 0;
+        }
+        if (entry.totalWidth > sumOfPositions) {
+            const excess = entry.totalWidth - sumOfPositions;
+            const perPosition = Math.ceil(excess / entry.span);
+            for (let s = 0; s < entry.span; s++) {
+                maxWidths[entry.startPos + s] = (maxWidths[entry.startPos + s] ?? 0) + perPosition;
+            }
         }
     }
 
