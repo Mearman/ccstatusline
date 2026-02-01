@@ -5,14 +5,12 @@ import {
     writeFileSync
 } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 
-interface PackageJson {
-    version: string;
-    [key: string]: unknown;
-}
+const PackageJsonSchema = z.object({ version: z.string() }).loose();
 
 // Read package.json to get version
-const packageJson = JSON.parse(readFileSync('package.json', 'utf-8')) as PackageJson;
+const packageJson = PackageJsonSchema.parse(JSON.parse(readFileSync('package.json', 'utf-8')));
 const version = packageJson.version;
 
 // Read the bundled file

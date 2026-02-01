@@ -46,7 +46,7 @@ async function readStdin(): Promise<string | null> {
             // Node.js environment
             process.stdin.setEncoding('utf8');
             for await (const chunk of process.stdin) {
-                chunks.push(chunk as string);
+                chunks.push(String(chunk));
             }
         }
         return chunks.join('');
