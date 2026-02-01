@@ -27,6 +27,12 @@ export interface PowerlineSetupProps {
 
 type Screen = 'menu' | 'separator' | 'startCap' | 'endCap' | 'themes';
 
+const navigableScreens = new Set<string>(['separator', 'startCap', 'endCap', 'themes']);
+
+function isNavigableScreen(value: string): value is Screen {
+    return navigableScreens.has(value);
+}
+
 export const PowerlineSetup: React.FC<PowerlineSetupProps> = ({
     settings,
     powerlineFontStatus,
@@ -144,8 +150,8 @@ export const PowerlineSetup: React.FC<PowerlineSetupProps> = ({
                 if (selected) {
                     if (selected.value === 'back') {
                         onBack();
-                    } else if (powerlineConfig.enabled) {
-                        setScreen(selected.value as Screen);
+                    } else if (powerlineConfig.enabled && isNavigableScreen(selected.value)) {
+                        setScreen(selected.value);
                     }
                 }
             } else if (input === 't' || input === 'T') {

@@ -13,7 +13,10 @@ import React, {
     useState
 } from 'react';
 
-import type { Settings } from '../types/Settings';
+import {
+    SettingsSchema,
+    type Settings
+} from '../types/Settings';
 import type { WidgetItem } from '../types/Widget';
 import {
     CCSTATUSLINE_COMMANDS,
@@ -76,7 +79,7 @@ export const App: React.FC = () => {
             // Set global chalk level based on settings (default to 256 colors for compatibility)
             chalk.level = loadedSettings.colorLevel;
             setSettings(loadedSettings);
-            setOriginalSettings(JSON.parse(JSON.stringify(loadedSettings)) as Settings); // Deep copy
+            setOriginalSettings(SettingsSchema.parse(JSON.parse(JSON.stringify(loadedSettings)))); // Deep copy
         });
         void isInstalled().then(setIsClaudeInstalled);
 
@@ -125,7 +128,7 @@ export const App: React.FC = () => {
         if (key.ctrl && input === 's' && settings) {
             void (async () => {
                 await saveSettings(settings);
-                setOriginalSettings(JSON.parse(JSON.stringify(settings)) as Settings);
+                setOriginalSettings(SettingsSchema.parse(JSON.parse(JSON.stringify(settings))));
                 setHasChanges(false);
                 setSaveMessage('✓ Configuration saved');
             })();
@@ -213,7 +216,7 @@ export const App: React.FC = () => {
             break;
         case 'save':
             await saveSettings(settings);
-            setOriginalSettings(JSON.parse(JSON.stringify(settings)) as Settings); // Update original after save
+            setOriginalSettings(SettingsSchema.parse(JSON.parse(JSON.stringify(settings)))); // Update original after save
             setHasChanges(false);
             exit();
             break;

@@ -6,6 +6,10 @@ import {
 } from 'ink';
 import React, { useState } from 'react';
 
+import {
+    ColorLevelSchema,
+    type ColorLevel
+} from '../../types/ColorLevel';
 import type { Settings } from '../../types/Settings';
 import type { WidgetItem } from '../../types/Widget';
 import { getWidget } from '../../utils/widgets';
@@ -20,7 +24,7 @@ export interface TerminalOptionsMenuProps {
 
 export const TerminalOptionsMenu: React.FC<TerminalOptionsMenuProps> = ({ settings, onUpdate, onBack }) => {
     const [showColorWarning, setShowColorWarning] = useState(false);
-    const [pendingColorLevel, setPendingColorLevel] = useState<0 | 1 | 2 | 3 | null>(null);
+    const [pendingColorLevel, setPendingColorLevel] = useState<ColorLevel | null>(null);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     const handleSelect = () => {
@@ -39,7 +43,7 @@ export const TerminalOptionsMenu: React.FC<TerminalOptionsMenuProps> = ({ settin
             );
 
             const currentLevel = settings.colorLevel;
-            const nextLevel = ((currentLevel + 1) % 4) as 0 | 1 | 2 | 3;
+            const nextLevel = ColorLevelSchema.parse((currentLevel + 1) % 4);
 
             // Warn if switching away from mode that supports custom colors
             if (hasCustomColors
