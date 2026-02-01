@@ -6,6 +6,7 @@ import type {
     WidgetEditorDisplay,
     WidgetItem
 } from '../types/Widget';
+import { renderProgressBar } from '../utils/progress-bar';
 
 type DisplayMode = 'time' | 'progress' | 'progress-short';
 
@@ -60,9 +61,9 @@ export class BlockTimerWidget implements Widget {
         if (context.isPreview) {
             const prefix = item.rawValue ? '' : 'Block ';
             if (displayMode === 'progress') {
-                return `${prefix}[██████████████████████░░░░░░░░] 73.9%`;
+                return `${prefix}[${renderProgressBar(73.9, 32)}] 73.9%`;
             } else if (displayMode === 'progress-short') {
-                return `${prefix}[███████░░░░░░░░] 73.9%`;
+                return `${prefix}[${renderProgressBar(73.9, 16)}] 73.9%`;
             }
             return item.rawValue ? '3hr 45m' : 'Block: 3hr 45m';
         }
@@ -73,8 +74,7 @@ export class BlockTimerWidget implements Widget {
             // No active session - show empty progress bar or 0hr 0m
             if (displayMode === 'progress' || displayMode === 'progress-short') {
                 const barWidth = displayMode === 'progress' ? 32 : 16;
-                const emptyBar = '░'.repeat(barWidth);
-                return item.rawValue ? `[${emptyBar}] 0%` : `Block [${emptyBar}] 0%`;
+                return item.rawValue ? `[${renderProgressBar(0, barWidth)}] 0%` : `Block [${renderProgressBar(0, barWidth)}] 0%`;
             } else {
                 return item.rawValue ? '0hr 0m' : 'Block: 0hr 0m';
             }
@@ -90,9 +90,7 @@ export class BlockTimerWidget implements Widget {
 
             if (displayMode === 'progress' || displayMode === 'progress-short') {
                 const barWidth = displayMode === 'progress' ? 32 : 16;
-                const filledWidth = Math.floor(progress * barWidth);
-                const emptyWidth = barWidth - filledWidth;
-                const progressBar = '█'.repeat(filledWidth) + '░'.repeat(emptyWidth);
+                const progressBar = renderProgressBar(progress * 100, barWidth);
 
                 if (item.rawValue) {
                     return `[${progressBar}] ${percentage}%`;
