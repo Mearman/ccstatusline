@@ -257,6 +257,22 @@ export const ItemsEditor: React.FC<ItemsEditorProps> = ({ widgets, onUpdate, onB
                     }
                     onUpdate(newWidgets);
                 }
+            } else if (input === 'n' && widgets.length > 0) {
+                // Cycle span: 1 → 2 → 3 → 1 (for non-separator items)
+                const currentWidget = widgets[selectedIndex];
+                if (currentWidget && currentWidget.type !== 'separator' && currentWidget.type !== 'flex-separator') {
+                    const newWidgets = [...widgets];
+                    const currentSpan = currentWidget.span ?? 1;
+                    const nextSpan = currentSpan >= 3 ? 1 : currentSpan + 1;
+                    if (nextSpan === 1) {
+                        const { span, ...rest } = currentWidget;
+                        void span;
+                        newWidgets[selectedIndex] = rest;
+                    } else {
+                        newWidgets[selectedIndex] = { ...currentWidget, span: nextSpan };
+                    }
+                    onUpdate(newWidgets);
+                }
             } else if (key.escape) {
                 onBack();
             } else if (widgets.length > 0) {
@@ -354,6 +370,9 @@ export const ItemsEditor: React.FC<ItemsEditorProps> = ({ widgets, onUpdate, onB
     if (canMerge) {
         helpText += ', (m)erge';
     }
+    if (currentWidget && !isSeparator && !isFlexSeparator) {
+        helpText += ', spa(n)';
+    }
     helpText += ', ESC back';
 
     // Build custom keybinds text
@@ -436,6 +455,14 @@ export const ItemsEditor: React.FC<ItemsEditorProps> = ({ widgets, onUpdate, onB
                                     {widget.rawValue && <Text dimColor> (raw value)</Text>}
                                     {widget.merge === true && <Text dimColor> (merged→)</Text>}
                                     {widget.merge === 'no-padding' && <Text dimColor> (merged-no-pad→)</Text>}
+                                    {(widget.span ?? 1) > 1 && (
+                                        <Text dimColor>
+                                            {' '}
+                                            (span
+                                            {widget.span}
+                                            )
+                                        </Text>
+                                    )}
                                 </Box>
                             );
                         })}
