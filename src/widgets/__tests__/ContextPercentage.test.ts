@@ -62,4 +62,84 @@ describe('ContextPercentageWidget', () => {
             expect(result).toBe('Ctx: 21.0%');
         });
     });
+
+    describe('progress bar display mode', () => {
+        function renderWithMode(modelId: string | undefined, contextLength: number, display: string, rawValue = false, inverse = false) {
+            const widget = new ContextPercentageWidget();
+            const context: RenderContext = {
+                data: modelId ? { model: { id: modelId } } : undefined,
+                tokenMetrics: {
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    cachedTokens: 0,
+                    totalTokens: 0,
+                    contextLength
+                }
+            };
+            const item: WidgetItem = {
+                id: 'context-percentage',
+                type: 'context-percentage',
+                rawValue,
+                metadata: { display, ...(inverse ? { inverse: 'true' } : {}) }
+            };
+            return widget.render(item, context, DEFAULT_SETTINGS);
+        }
+
+        it('should render progress bar for 200k model', () => {
+            // 42000/200000 = 21.0%, floor(0.21 * 32) = 6 filled, 26 empty
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'progress');
+            expect(result).toBe('Ctx [██████░░░░░░░░░░░░░░░░░░░░░░░░░░] 21.0%');
+        });
+
+        it('should render short progress bar', () => {
+            // 42000/200000 = 21.0%, floor(0.21 * 16) = 3 filled, 13 empty
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'progress-short');
+            expect(result).toBe('Ctx [███░░░░░░░░░░░░░] 21.0%');
+        });
+
+        it('should render progress bar with raw value', () => {
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'progress', true);
+            expect(result).toBe('[██████░░░░░░░░░░░░░░░░░░░░░░░░░░] 21.0%');
+        });
+
+        it('should render inverse progress bar showing remaining percentage with used fill', () => {
+            // inverse: display shows 79.0% remaining, but bar fills based on used (21.0%)
+            const result = renderWithMode('claude-3-5-sonnet-20241022', 42000, 'progress', false, true);
+            expect(result).toBe('Ctx [██████░░░░░░░░░░░░░░░░░░░░░░░░░░] 79.0%');
+        });
+
+        it('should render progress bar for 1M model', () => {
+            // 42000/1000000 = 4.2%, floor(0.042 * 32) = 1 filled, 31 empty
+            const result = renderWithMode('claude-sonnet-4-5-20250929[1m]', 42000, 'progress');
+            expect(result).toBe('Ctx [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 4.2%');
+        });
+    });
+
+    describe('preview with progress mode', () => {
+        it('should render progress bar preview', () => {
+            const widget = new ContextPercentageWidget();
+            const context: RenderContext = { isPreview: true };
+            const item: WidgetItem = {
+                id: 'context-percentage',
+                type: 'context-percentage',
+                metadata: { display: 'progress' }
+            };
+            const result = widget.render(item, context, DEFAULT_SETTINGS);
+            // 9.3%, floor(0.093 * 32) = 2 filled, 30 empty
+            expect(result).toBe('Ctx [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 9.3%');
+        });
+
+        it('should render short progress bar preview', () => {
+            const widget = new ContextPercentageWidget();
+            const context: RenderContext = { isPreview: true };
+            const item: WidgetItem = {
+                id: 'context-percentage',
+                type: 'context-percentage',
+                metadata: { display: 'progress-short' }
+            };
+            const result = widget.render(item, context, DEFAULT_SETTINGS);
+            // 9.3%, floor(0.093 * 16) = 1 filled, 15 empty
+            expect(result).toBe('Ctx [█░░░░░░░░░░░░░░░] 9.3%');
+        });
+    });
 });
